@@ -2,7 +2,6 @@ package tun
 
 import (
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -14,12 +13,12 @@ import (
 
 const (
 	defaultTunPath = "/dev/net/tun"
-	defaultMTU     = 1500
-	ifReqSize      = unix.IFNAMSIZ
+	defaultMTU     = "1500"
 )
 
 type Tun struct {
 	device     *os.File
+	MTU        int
 	localAddr  string
 	remoteAddr string
 }
@@ -60,56 +59,20 @@ func (t *Tun) SetWriteDeadline(_ time.Time) error {
 	return nil
 }
 
-func setMTU(name string, value int) error {
-
-	// open datagram socket
-	fd, err := unix.Socket(
-		unix.AF_INET,
-		unix.SOCK_DGRAM|unix.SOCK_CLOEXEC,
-		0,
-	)
-	if err != nil {
+func setTun(name string, localAddr string, remoteAddr string, mtu string) error {
+	if err := exec.Command("ip", "addr", "add", localAddr, "peer", remoteAddr, "dev", name).Run(); err != nil {
 		return err
 	}
-
-	defer unix.Close(fd)
-
-	// do ioctl call
-	var ifr [unix.IFNAMSIZ + 64]byte
-	copy(ifr[:], name)
-	*(*uint32)(unsafe.Pointer(&ifr[unix.IFNAMSIZ])) = uint32(n)
-	_, _, errno := unix.Syscall(
-		unix.SYS_IOCTL,
-		uintptr(fd),
-		uintptr(unix.SIOCSIFMTU),
-		uintptr(unsafe.Pointer(&ifr[0])),
-	)
-
-	if errno != 0 {
-		return fmt.Errorf("failed to set MTU of TUN device: %w", errno)
-	}
-
-	return nil
-
-}
-
-func setTun(name string, localAddr string) error {
-	if err := exec.Command("ip", "addr", "add", localAddr, "dev", name).Run(); err != nil {
-		return err
-	}
-	if err := exec.Command("ip", "link", "set", name, "up").Run(); err != nil {
+	if err := exec.Command("ip", "link", "set", name, "mtu", mtu, "up").Run(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func New(name string, localAddr string, mtu ...int) (net.Conn, error) {
+func New(name, localAddr, remoteAddr string, mtu ...string) (net.Conn, error) {
 	MTU := defaultMTU
 	if len(mtu) > 0 {
 		MTU = mtu[0]
-		if MTU > 9000 {
-			return nil, errors.New("invalid MTU value")
-		}
 	}
 
 	nfd, err := unix.Open("/dev/net/tun", unix.O_RDWR, 0)
@@ -141,13 +104,13 @@ func New(name string, localAddr string, mtu ...int) (net.Conn, error) {
 		return nil, err
 	}
 
-	// Note that the above -- open,ioctl,nonblock -- must happen prior to handing it to netpoll as below this line.
-
 	fd := os.NewFile(uintptr(nfd), "/dev/net/tun")
-	setMTU(name, MTU)
-	setTun(name, localAddr)
+	if err := setTun(name, localAddr, remoteAddr, MTU); err != nil {
+		return nil, err
+	}
 	return &Tun{
-		device:    fd,
-		localAddr: localAddr,
+		device:     fd,
+		localAddr:  localAddr,
+		remoteAddr: remoteAddr,
 	}, nil
 }
