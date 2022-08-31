@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func TestTun(t *testing.T) {
+func TestTun(ts *testing.T) {
 	t := New("tun0", "10.0.0.1", "10.0.0.2")
 	defer t.Close()
 
@@ -16,7 +16,7 @@ func TestTun(t *testing.T) {
 			if err != nil {
 				return
 			}
-			t.Log(len(n))
+			ts.Log(len(n))
 		}
 	}()
 	<-time.After(5 * time.Minute)
