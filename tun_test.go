@@ -15,11 +15,12 @@ func TestTun(ts *testing.T) {
 	go func() {
 		b := make([]byte, 1500)
 		for {
-			n, err := t.Read(b)
+			n, err := t.Read(b[:1500])
 			if err != nil {
 				return
 			}
-			ts.Logf("Len: %d, Read: %d", len(b), n)
+			ts.Logf("Len: %d, Read: %d", len(b[:n]))
+			b = b[:0]
 		}
 	}()
 	<-time.After(5 * time.Minute)
