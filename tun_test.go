@@ -19,7 +19,7 @@ func TestTun(ts *testing.T) {
 			if err != nil {
 				return
 			}
-			ts.Log(len(n))
+			ts.Log(len(b), n)
 		}
 	}()
 	<-time.After(5 * time.Minute)
