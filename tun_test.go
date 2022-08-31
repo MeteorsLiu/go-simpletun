@@ -8,7 +8,7 @@ import (
 func TestTun(ts *testing.T) {
 	t, err := New("tun0", "10.0.0.1", "10.0.0.2")
 	if err != nil {
-		ts.Errorf(err)
+		ts.Errorf("%v", err)
 	}
 	defer t.Close()
 
@@ -19,7 +19,7 @@ func TestTun(ts *testing.T) {
 			if err != nil {
 				return
 			}
-			ts.Log(len(b), n)
+			ts.Logf("Len: %d, Read: %d", len(b), n)
 		}
 	}()
 	<-time.After(5 * time.Minute)
