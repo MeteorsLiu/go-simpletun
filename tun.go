@@ -63,7 +63,7 @@ func setTun(name string, localAddr string, remoteAddr string, mtu string) error 
 	if err := exec.Command("ip", "addr", "add", localAddr, "peer", remoteAddr, "dev", name).Run(); err != nil {
 		return err
 	}
-	if err := exec.Command("ip", "link", "set", name, "mtu", mtu, "up").Run(); err != nil {
+	if err := exec.Command("ip", "link", "set", name, "mtu", mtu, "txqueuelen", "1024", "up").Run(); err != nil {
 		return err
 	}
 	return nil
