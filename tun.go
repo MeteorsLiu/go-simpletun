@@ -79,7 +79,7 @@ func New(name, localAddr, remoteAddr string, mtu ...string) (*Tun, error) {
 		MTU = mtu[0]
 	}
 
-	nfd, err := unix.Open("/dev/net/tun", unix.O_RDWR, 0)
+	nfd, err := unix.Open("/dev/net/tun", unix.O_RDWR|unix.O_CLOEXEC, 0)
 	if err != nil {
 		return nil, err
 	}
