@@ -18,7 +18,7 @@ const (
 
 type Tun struct {
 	device     *os.File
-	MTU        int
+	fd         int
 	localAddr  string
 	remoteAddr string
 }
@@ -69,7 +69,11 @@ func setTun(name string, localAddr string, remoteAddr string, mtu string) error 
 	return nil
 }
 
-func New(name, localAddr, remoteAddr string, mtu ...string) (net.Conn, error) {
+func (t *Tun) Fd() int {
+	return t.fd
+}
+
+func New(name, localAddr, remoteAddr string, mtu ...string) (*Tun, error) {
 	MTU := defaultMTU
 	if len(mtu) > 0 {
 		MTU = mtu[0]
@@ -109,6 +113,7 @@ func New(name, localAddr, remoteAddr string, mtu ...string) (net.Conn, error) {
 		return nil, err
 	}
 	return &Tun{
+		fd:         nfd,
 		device:     fd,
 		localAddr:  localAddr,
 		remoteAddr: remoteAddr,
